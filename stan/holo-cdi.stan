@@ -6,6 +6,18 @@
  * arXiv 2105.11512v2.
  */
 functions {
+
+  // this won't be necessary once in the stan math library
+  matrix abs(complex_matrix z) {
+    matrix[rows(z), cols(z)] x;
+    for (i in 1 : rows(z)) {
+      for (j in 1 : cols(z)) {
+        x[i][j] = abs(z[i][j]);
+      }
+    }
+    return x;
+  }
+
   /**
    * Return M1 x M2 matrix of 1 values with blocks in corners set to
    * 0, where the upper left is (r x r), the upper right is (r x r-1),
@@ -18,7 +30,7 @@ functions {
   matrix pad_corners(int M1, int M2, int r) {
     matrix[M1, M2] B_cal = rep_matrix(1, M1, M2);
     // upper left
-    B_cal[1:r, 1:r] = rep_matrix(0, r, r);  
+    B_cal[1:r, 1:r] = rep_matrix(0, r, r);
     // upper right
     B_cal[1:r, (M2 - r + 2):M2] = rep_matrix(0, r, r - 1);
     // lower left
@@ -43,31 +55,32 @@ functions {
    */
   matrix pad(matrix X, matrix R, int M1, int M2) {
     matrix[M1, M2] y = rep_matrix(0, M1, M2);
-    int N = X.rows();
+    int N = rows(X);
     y[1:N, 1:N] = X;
     y[1:N, (2 * N + 1):(3 * N)] = R;
     return y;
+  }
 }
 data {
   int<lower=0> N;                    // image dimension
   matrix[N, N] R;                    // registration image
-  int<lower=1> r;                    // replaces omega1, omega2 in paper
   int<lower=N> M1;                   // rows of padded matrices
   int<lower=3 * N> M2;               // cols of padded matrices
-  
+  int<lower=1, upper=M1> r;                    // replaces omega1, omega2 in paper
+
   real<lower=0> N_p;                 // avg number of photons per pixel
   array[N, N] int<lower=0> Y_tilde;  // observed number of photons
 }
 transformed data {
-  matrix<lower=0, upper=1>[M1, M2] B_cal = pad_corners(M1, M2, r);
+  matrix[M1, M2] B_cal = pad_corners(M1, M2, r);
 }
 parameters {
   matrix<lower=0>[N, N] X;
 }
 model {
   matrix[M1, M2] X0R_pad = pad(X, R, M1, M2);
-  matrix<lower=0>[M1, M2] Y = B_cal .* abs(fft2(XOR_pad))^2;
-  real<lower=0> Y_bar = mean(Y);
+  matrix[M1, M2] Y = B_cal .* abs(fft2(X0R_pad)).^2;
+  real Y_bar = mean(Y);
 
   // prior (look at Tikhonov or total variation regularization)
   // X ~ ???
