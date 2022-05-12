@@ -62,13 +62,13 @@ functions {
 }
 data {
   int<lower=0> N; // image dimension
-  matrix[N, N] R; // registration image
+  matrix<lower=0, upper=1>[N, N] R; // registration image
   int<lower=N> M1; // rows of padded matrices
   int<lower=3 * N> M2; // cols of padded matrices
   int<lower=1, upper=M1> r; // replaces omega1, omega2 in paper
 
   real<lower=0> N_p; // avg number of photons per pixel
-  array[N, N] int<lower=0> Y_tilde; // observed number of photons
+  array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
 }
 transformed data {
   matrix[M1, M2] B_cal = pad_corners(M1, M2, r);
@@ -89,8 +89,6 @@ model {
   matrix[M1, M2] lambda = N_p_over_Y_bar * Y;
   for (m1 in 1 : M1) {
     for (m2 in 1 : M2) {
-      // BMW: Y_tilde and lambda do not have the same dimensions.
-      //      Is Y_tilde meant to be M1xM2?
       Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
     }
   }
