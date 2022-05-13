@@ -28,6 +28,9 @@ functions {
    */
   matrix pad_corners(int M1, int M2, int r) {
     matrix[M1, M2] B_cal = rep_matrix(1, M1, M2);
+    if (r == 0){
+      return B_cal;
+    }
     // upper left
     B_cal[1 : r, 1 : r] = rep_matrix(0, r, r);
     // upper right
@@ -65,7 +68,7 @@ data {
   matrix<lower=0, upper=1>[N, N] R; // registration image
   int<lower=N> M1; // rows of padded matrices
   int<lower=3 * N> M2; // cols of padded matrices
-  int<lower=1, upper=M1> r; // replaces omega1, omega2 in paper
+  int<lower=0, upper=M1> r; // replaces omega1, omega2 in paper
 
   real<lower=0> N_p; // avg number of photons per pixel
   array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
@@ -82,7 +85,7 @@ model {
   real Y_bar = mean(Y);
 
   // prior (look at Tikhonov or total variation regularization)
-  // X ~ ???
+  to_vector(X) ~ normal(100,10);
 
   // likelihood
   real N_p_over_Y_bar = N_p / Y_bar;
