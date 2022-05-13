@@ -85,13 +85,18 @@ model {
   real Y_bar = mean(Y);
 
   // prior (look at Tikhonov or total variation regularization)
-  to_vector(X) ~ normal(100,10);
+  // X ~ ?
 
   // likelihood
   real N_p_over_Y_bar = N_p / Y_bar;
   matrix[M1, M2] lambda = N_p_over_Y_bar * Y;
   for (m1 in 1 : M1) {
     for (m2 in 1 : M2) {
+
+      if (is_nan(lambda[m1, m2])){
+        reject("Lambda is nan at", m1, m2, " and for X ", X, " and y bar ", Y_bar);
+      }
+
       Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
     }
   }

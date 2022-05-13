@@ -19,7 +19,7 @@ N = R.shape[0]
 Y_tilde = np.loadtxt(DATA_FILE, delimiter=',', dtype=int)
 M1, M2 = Y_tilde.shape
 r = 0
-N_p = 1e10
+N_p = 1e4
 # more realistic values
 # r = floor(0.5*0.05*np.mean([M1,M2]))
 # N_p = 10 # ???
@@ -27,4 +27,4 @@ N_p = 1e10
 data = {"N":N, "R":R, "M1":M1, "M2":M2, "Y_tilde":Y_tilde, "r":r, "N_p":N_p}
 
 if __name__ == "__main__":
-    fit = model.sample(data=data, chains=1, show_console=True)
+    fit = model.sample(data=data, chains=1, show_console=True, inits=0)
