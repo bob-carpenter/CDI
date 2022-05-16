@@ -77,11 +77,11 @@ transformed data {
   matrix[M1, M2] B_cal = pad_corners(M1, M2, r);
 }
 parameters {
-  matrix<lower=0>[N, N] X;
+  matrix<lower=0, upper=1>[N, N] X;
 }
 model {
   matrix[M1, M2] X0R_pad = pad(X, R, M1, M2);
-  matrix[M1, M2] Y = B_cal .* abs(fft2(X0R_pad)) .^ 2;
+  matrix[M1, M2] Y = abs(fft2(X0R_pad)) .^ 2;
   real Y_bar = mean(Y);
 
   // prior (look at Tikhonov or total variation regularization)
@@ -97,7 +97,10 @@ model {
         reject("Lambda is nan at", m1, m2, " and for X ", X, " and y bar ", Y_bar);
       }
 
-      Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
+      // BMW: No need for explicit matrix here now
+      if (B_cal[m1,m2] == 1){
+        Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
+      }
     }
   }
   // to_array_1d(Y_tilde) ~ poisson(to_vector(lambda));

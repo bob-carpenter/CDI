@@ -31,5 +31,5 @@ N_p = data['Np'][0,0]
 data = {"N":N, "R":R, "M1":M1, "M2":M2, "Y_tilde":Y_tilde, "r":r, "N_p":N_p}
 
 if __name__ == "__main__":
-    fit = model.sample(data=data, chains=1, show_console=True, inits=0)
+    fit = model.sample(data=data, chains=1, show_console=True)
     fit.save_csvfiles('.')
