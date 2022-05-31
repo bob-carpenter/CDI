@@ -14,7 +14,6 @@ DATA_FILE = REPO_DIR / "data" / "Yt_data.mat"
 
 model = cmdstanpy.CmdStanModel(stan_file=STAN_FILE)
 
-
 R = np.loadtxt(REF_FILE, delimiter=',', dtype=int)
 N = R.shape[0]
 

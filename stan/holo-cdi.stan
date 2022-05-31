@@ -6,16 +6,6 @@
  * arXiv 2105.11512v2.
  */
 functions {
-  // this won't be necessary once in the stan math library
-  matrix abs(complex_matrix z) {
-    matrix[rows(z), cols(z)] x;
-    for (i in 1 : rows(z)) {
-      for (j in 1 : cols(z)) {
-        x[i][j] = abs(z[i][j]);
-      }
-    }
-    return x;
-  }
 
   /**
    * Return M1 x M2 matrix of 1 values with blocks in corners set to
