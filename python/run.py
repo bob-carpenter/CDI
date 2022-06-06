@@ -5,6 +5,7 @@ import numpy as np
 import pathlib
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import time
 
 
 def rgb2gray(rgb):
@@ -14,12 +15,24 @@ def rgb2gray(rgb):
     return gray
 
 
+def side_by_side(first, second):
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.imshow(first[0], cmap="gray")
+    ax1.set_title(first[1])
+    ax2.imshow(second[0], cmap="gray")
+    ax2.set_title(second[1])
+    plt.show()
+
+
+SIZE = "32"
+NOISE = "low_photon"
+
 REPO_DIR = pathlib.Path(__file__).parent.parent.resolve()
 
 STAN_FILE = REPO_DIR / "stan" / "holo-cdi.stan"
-REF_FILE = REPO_DIR / "data" / "URA_256.csv"
-DATA_FILE = REPO_DIR / "data" / "Yt_data.mat"
-TRUE_IMAGE = REPO_DIR / "data" / "mimivirus.png"
+REF_FILE = REPO_DIR / "data" / SIZE / f"URA_{SIZE}.csv"
+DATA_FILE = REPO_DIR / "data" / SIZE / NOISE / "Yt_data.mat"
+TRUE_IMAGE = REPO_DIR / "data" / SIZE / "mimivirus.png"
 
 
 model = cmdstanpy.CmdStanModel(stan_file=STAN_FILE)
@@ -33,19 +46,36 @@ M1, M2 = Y_tilde.shape
 r = int(data["r"][0, 0])
 N_p = data["Np"][0, 0]
 
-# more realistic values
-# r = floor(0.5*0.05*np.mean([M1,M2]))
-# N_p = 10 # ???
 
 x_init_true = rgb2gray(mpimg.imread(TRUE_IMAGE))
-# sanity check:
-# plt.imshow(x_init_true, cmap="gray")
-# plt.show()
 
 data = {"N": N, "R": R, "M1": M1, "M2": M2, "Y_tilde": Y_tilde, "r": r, "N_p": N_p}
 
+
 if __name__ == "__main__":
-    fit = model.optimize(data=data, show_console=True, inits=1)  # {'X': x_init_true}
+    print(data)
+    # sanity check:
+    side_by_side((x_init_true, "Ground truth"), (R, "reference"))
+
+    # fit = model.optimize(
+    #     data=data,
+    #     inits=1,
+    #     # inits={"X": x_init_true},
+    #     show_console=True,
+    #     save_iterations=True,
+    #     output_dir='.'
+    # )
+    # side_by_side((x_init_true, "True X"), (fit.stan_variable("X"), "Recovered X"))
+
+    before = time.perf_counter()
+    fit = model.sample(
+        data=data,
+        chains=2,
+        inits=1,
+        # inits={"X": x_init_true},
+        show_console=True,
+    )
+    after = time.perf_counter()
+    print(f'Sampling took {after - before:0.2f} seconds')
     fit.save_csvfiles(".")
-    plt.imshow(fit.stan_variable("X"), cmap="gray")
-    plt.show()
+    side_by_side((x_init_true, "True X"), (fit.stan_variable("X").mean(axis=0), "Recovered X"))

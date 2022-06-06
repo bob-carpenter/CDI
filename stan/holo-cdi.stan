@@ -93,5 +93,5 @@ model {
       }
     }
   }
-  // to_array_1d(Y_tilde) ~ poisson(to_vector(lambda));
+  // to_array_1d(Y_tilde) ~ poisson(to_vector(lambda'));
 }
