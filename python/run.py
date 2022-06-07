@@ -1,8 +1,6 @@
 import datetime
-import os
 import pathlib
 import time
-from math import floor
 
 import cmdstanpy
 import matplotlib.image as mpimg
@@ -23,8 +21,8 @@ def rgb2gray(rgb):
     return gray
 
 
-SIZE = "128"  # 32, 64, 128, 192, 256
-NOISE = "low_photon"  # noiseless, low_photon, beamstop, full
+SIZE = "256"  # 32, 64, 128, 192, 256
+NOISE = "full"  # noiseless, low_photon, beamstop, full
 METHOD = "OPTIMIZE"  # OPTIMIZE, SAMPLE
 
 
@@ -49,11 +47,16 @@ r = int(data["r"][0, 0])
 N_p = data["Np"][0, 0]
 
 
+data = {"N": N, "R": R, "M1": M1, "M2": M2, "Y_tilde": Y_tilde, "r": r, "N_p": N_p}
+
+x_init_true = rgb2gray(mpimg.imread(TRUE_IMAGE))
+
+
 def side_by_side(first, second, save=False):
     fig, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.imshow(first[0], cmap="gray")
+    ax1.imshow(first[0], cmap="gray", vmin=0, vmax=1)
     ax1.set_title(first[1])
-    ax2.imshow(second[0], cmap="gray")
+    ax2.imshow(second[0], cmap="gray", vmin=0, vmax=1)
     ax2.set_title(second[1])
     fig.suptitle(f"{SIZE}x{SIZE} - N_p: {N_p} - r: {r}")
     if save:
@@ -61,21 +64,16 @@ def side_by_side(first, second, save=False):
     plt.show()
 
 
-x_init_true = rgb2gray(mpimg.imread(TRUE_IMAGE))
-
-data = {"N": N, "R": R, "M1": M1, "M2": M2, "Y_tilde": Y_tilde, "r": r, "N_p": N_p}
-
-
 if __name__ == "__main__":
-    print(data)
     # sanity check:
+    print(data)
     side_by_side((x_init_true, "Ground truth"), (R, "reference"))
 
     if METHOD == "OPTIMIZE":
         fit = model.optimize(
             data=data,
-            # inits=1,
-            inits={"X": x_init_true},
+            inits=1,
+            # inits={"X": x_init_true},
             show_console=True,
             save_iterations=True,
             output_dir=RESULT_DIR,
@@ -93,6 +91,7 @@ if __name__ == "__main__":
             show_console=True,
             output_dir=RESULT_DIR,
             save_warmup=True,
+            refresh=10,
         )
         after = time.perf_counter()
         print(f"Sampling took {after - before:0.2f} seconds")

@@ -57,13 +57,13 @@ functions {
 }
 
 data {
-  int<lower=0> N; // image dimension
-  matrix<lower=0, upper=1>[N, N] R; // registration image
-  int<lower=N> M1; // rows of padded matrices
-  int<lower=3 * N> M2; // cols of padded matrices
-  int<lower=0, upper=M1> r; // replaces omega1, omega2 in paper
+  int<lower=0> N;                     // image dimension
+  matrix<lower=0, upper=1>[N, N] R;   // registration image
+  int<lower=N> M1;                    // rows of padded matrices
+  int<lower=3 * N> M2;                // cols of padded matrices
+  int<lower=0, upper=M1> r;           // replaces omega1, omega2 in paper
 
-  real<lower=0> N_p; // avg number of photons per pixel
+  real<lower=0> N_p;                  // avg number of photons per pixel
   array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
 }
 
@@ -80,6 +80,7 @@ model {
   matrix[M1, M2] Y = abs(fft2(X0R_pad)) .^ 2;
   real Y_bar = mean(Y);
 
+  // prior
   real sigma = 1; // todo: try hierachical model
   for (i in 1 : rows(X) - 1) {
     X[i] ~ normal(X[i + 1], sigma);
@@ -91,9 +92,9 @@ model {
   // likelihood
   real N_p_over_Y_bar = N_p / Y_bar;
   matrix[M1, M2] lambda = N_p_over_Y_bar * Y;
+
   for (m1 in 1 : M1) {
     for (m2 in 1 : M2) {
-      // BMW: No need for explicit matrix here now
       if (B_cal[m1, m2] == 1) {
         Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
         // square error

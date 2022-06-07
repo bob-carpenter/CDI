@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 
+stan/holo-cdi
+stan/holo-cdi.exe
 *.hpp
-
 results/
