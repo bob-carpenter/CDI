@@ -12,6 +12,11 @@ import scipy.io as scio
 
 
 def rgb2gray(rgb):
+    """Convert a nxmx3 RGB array to a grayscale nxm array.
+
+    This function uses the same internal coefficients as MATLAB:
+    https://www.mathworks.com/help/matlab/ref/rgb2gray.html
+    """
     r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
     gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
 
