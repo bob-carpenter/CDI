@@ -18,8 +18,8 @@ def rgb2gray(rgb):
     return gray
 
 
-SIZE = "256"  # 32, 64, 128, 192, 256
-NOISE = "full"  # noiseless, low_photon, beamstop, full
+SIZE = "128"  # 32, 64, 128, 192, 256
+NOISE = "low_photon"  # noiseless, low_photon, beamstop, full
 METHOD = "OPTIMIZE"  # OPTIMIZE, SAMPLE
 
 
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     if METHOD == "OPTIMIZE":
         fit = model.optimize(
             data=data,
-            inits=1,
-            # inits={"X": x_init_true},
+            # inits=1,
+            inits={"X": x_init_true},
             show_console=True,
             save_iterations=True,
             output_dir=RESULT_DIR,

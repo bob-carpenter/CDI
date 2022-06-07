@@ -5,6 +5,7 @@
  * coherent diffraction imaging via maximum likelihood estimation.
  * arXiv 2105.11512v2.
  */
+
 functions {
 
   /**
@@ -18,7 +19,7 @@ functions {
    */
   matrix pad_corners(int M1, int M2, int r) {
     matrix[M1, M2] B_cal = rep_matrix(1, M1, M2);
-    if (r == 0){
+    if (r == 0) {
       return B_cal;
     }
     // upper left
@@ -31,6 +32,7 @@ functions {
     B_cal[M1 - r + 2 : M1, M2 - r + 2 : M2] = rep_matrix(0, r - 1, r - 1);
     return B_cal;
   }
+
   /**
    * Return result of separating X and R with a matrix of 0s and then
    * 0 padding to right and below.  That is, assuming X and R are the
@@ -53,6 +55,7 @@ functions {
     return y;
   }
 }
+
 data {
   int<lower=0> N; // image dimension
   matrix<lower=0, upper=1>[N, N] R; // registration image
@@ -63,35 +66,39 @@ data {
   real<lower=0> N_p; // avg number of photons per pixel
   array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
 }
+
 transformed data {
   matrix[M1, M2] B_cal = pad_corners(M1, M2, r);
 }
+
 parameters {
   matrix<lower=0, upper=1>[N, N] X;
 }
+
 model {
   matrix[M1, M2] X0R_pad = pad(X, R, M1, M2);
   matrix[M1, M2] Y = abs(fft2(X0R_pad)) .^ 2;
   real Y_bar = mean(Y);
 
-  // prior (look at Tikhonov or total variation regularization)
-  // X ~ ?
+  real sigma = 1; // todo: try hierachical model
+  for (i in 1 : rows(X) - 1) {
+    X[i] ~ normal(X[i + 1], sigma);
+  }
+  for (j in 1 : cols(X) - 1) {
+    X[ : , j] ~ normal(X[ : , j + 1], sigma);
+  }
 
   // likelihood
   real N_p_over_Y_bar = N_p / Y_bar;
   matrix[M1, M2] lambda = N_p_over_Y_bar * Y;
   for (m1 in 1 : M1) {
     for (m2 in 1 : M2) {
-
-      if (is_nan(lambda[m1, m2])){
-        reject("Lambda is nan at", m1, m2, " and for X ", X, " and y bar ", Y_bar);
-      }
-
       // BMW: No need for explicit matrix here now
-      if (B_cal[m1,m2] == 1){
+      if (B_cal[m1, m2] == 1) {
         Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
+        // square error
+        // Y_tilde[m1, m2] ~ normal(lambda[m1, m2], 1 / sqrt(2));
       }
     }
   }
-  // to_array_1d(Y_tilde) ~ poisson(to_vector(lambda'));
 }
