@@ -21,7 +21,7 @@ def rgb2gray(rgb):
     return gray
 
 
-SIZE = "256"  # 32, 64, 128, 192, 256
+SIZE = "128"  # 32, 64, 128, 192, 256
 NOISE = "full"  # noiseless, low_photon, beamstop, full
 METHOD = "OPTIMIZE"  # OPTIMIZE, SAMPLE
 
@@ -92,6 +92,8 @@ if __name__ == "__main__":
             output_dir=RESULT_DIR,
             save_warmup=True,
             refresh=10,
+            iter_warmup=400,
+            iter_sampling=400
         )
         after = time.perf_counter()
         print(f"Sampling took {after - before:0.2f} seconds")

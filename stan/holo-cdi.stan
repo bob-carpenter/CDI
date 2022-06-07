@@ -61,7 +61,7 @@ data {
   matrix<lower=0, upper=1>[N, N] R;   // registration image
   int<lower=N> M1;                    // rows of padded matrices
   int<lower=3 * N> M2;                // cols of padded matrices
-  int<lower=0, upper=M1> r;           // replaces omega1, omega2 in paper
+  int<lower=0, upper=M1> r;           // beamstop radius. replaces omega1, omega2 in paper
 
   real<lower=0> N_p;                  // avg number of photons per pixel
   array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
