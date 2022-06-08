@@ -21,10 +21,10 @@ def rgb2gray(rgb):
     return gray
 
 
-SIZE = "256"  # 32, 64, 128, 192, 256
+SIZE = "128"  # 32, 64, 128, 192, 256
 NOISE = "full"  # noiseless, low_photon, beamstop, full
 METHOD = "OPTIMIZE"  # OPTIMIZE, SAMPLE
-
+INIT_TO_TRUE = False
 
 REPO_DIR = pathlib.Path(__file__).parent.parent.resolve()
 
@@ -39,6 +39,7 @@ model = cmdstanpy.CmdStanModel(stan_file=STAN_FILE)
 
 R = np.loadtxt(REF_FILE, delimiter=",", dtype=int)
 N = R.shape[0]
+d = N  # separation - defaults to full size of sample
 
 data = scio.loadmat(DATA_FILE)
 Y_tilde = data["Yt"].astype("int64")
@@ -46,10 +47,21 @@ M1, M2 = Y_tilde.shape
 r = int(data["r"][0, 0])
 N_p = data["Np"][0, 0]
 
+sigma = 1  # smoothing
 
-data = {"N": N, "R": R, "M1": M1, "M2": M2, "Y_tilde": Y_tilde, "r": r, "N_p": N_p}
+data = {
+    "N": N,
+    "R": R,
+    "d": d,
+    "M1": M1,
+    "M2": M2,
+    "Y_tilde": Y_tilde,
+    "r": r,
+    "N_p": N_p,
+    "sigma": sigma,
+}
 
-x_init_true = rgb2gray(mpimg.imread(TRUE_IMAGE))
+x_true = rgb2gray(mpimg.imread(TRUE_IMAGE))
 
 
 def side_by_side(first, second, save=False):
@@ -58,7 +70,9 @@ def side_by_side(first, second, save=False):
     ax1.set_title(first[1])
     ax2.imshow(second[0], cmap="gray", vmin=0, vmax=1)
     ax2.set_title(second[1])
-    fig.suptitle(f"{SIZE}x{SIZE} - N_p: {N_p} - r: {r}")
+    fig.suptitle(
+        f"{SIZE}x{SIZE} - N_p: {N_p} - r: {r} - sigma: {sigma} - init: {'true image' if INIT_TO_TRUE else '1'}"
+    )
     if save:
         fig.savefig(RESULT_DIR / f"recovery-{datetime.datetime.now():%Y%m%d%H%M%S}")
     plt.show()
@@ -67,29 +81,25 @@ def side_by_side(first, second, save=False):
 if __name__ == "__main__":
     # sanity check:
     print(data)
-    side_by_side((x_init_true, "Ground truth"), (R, "reference"))
+    side_by_side((x_true, "Ground truth"), (R, "reference"))
     # show input frequencies
     # plt.imshow(np.fft.fftshift(np.log(1 + Y_tilde)), cmap='viridis'); plt.show()
 
     if METHOD == "OPTIMIZE":
         fit = model.optimize(
             data=data,
-            inits=1,
-            # inits={"X": x_init_true},
+            inits={"X": x_true} if INIT_TO_TRUE else 1,
             show_console=True,
             save_iterations=True,
             output_dir=RESULT_DIR,
         )
-        side_by_side(
-            (x_init_true, "True X"), (fit.stan_variable("X"), "Recovered X"), True
-        )
+        side_by_side((x_true, "True X"), (fit.stan_variable("X"), "Recovered X"), True)
     elif METHOD == "SAMPLE":
         before = time.perf_counter()
         fit = model.sample(
             data=data,
             chains=2,
-            inits=1,
-            # inits={"X": x_init_true},
+            inits={"X": x_true} if INIT_TO_TRUE else 1,
             show_console=True,
             output_dir=RESULT_DIR,
             save_warmup=True,
@@ -100,7 +110,7 @@ if __name__ == "__main__":
         after = time.perf_counter()
         print(f"Sampling took {after - before:0.2f} seconds")
         side_by_side(
-            (x_init_true, "True X"),
+            (x_true, "True X"),
             (fit.stan_variable("X").mean(axis=0), "Recovered X"),
             True,
         )

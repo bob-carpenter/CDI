@@ -47,11 +47,11 @@ functions {
    * @param R R matrix
    * @return 0-padded [X, 0, R] matrix
    */
-  matrix pad(matrix X, matrix R, int M1, int M2) {
+  matrix pad(matrix X, matrix R, int d, int M1, int M2) {
     matrix[M1, M2] y = rep_matrix(0, M1, M2);
     int N = rows(X);
     y[1 : N, 1 : N] = X;
-    y[1 : N, 2 * N + 1 : 3 * N] = R;
+    y[1 : N,  N + d + 1 : 2 * N + d] = R;
     return y;
   }
 }
@@ -59,12 +59,15 @@ functions {
 data {
   int<lower=0> N;                     // image dimension
   matrix<lower=0, upper=1>[N, N] R;   // registration image
+  int<lower=0, upper=N> d;            // separation between sample and registration image
   int<lower=N> M1;                    // rows of padded matrices
-  int<lower=3 * N> M2;                // cols of padded matrices
+  int<lower=2 * N + d> M2;            // cols of padded matrices
   int<lower=0, upper=M1> r;           // beamstop radius. replaces omega1, omega2 in paper
 
   real<lower=0> N_p;                  // avg number of photons per pixel
   array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
+
+  real<lower=0> sigma;                // standard deviation of pixel prior. TODO: try hierachical model
 }
 
 transformed data {
@@ -76,12 +79,11 @@ parameters {
 }
 
 model {
-  matrix[M1, M2] X0R_pad = pad(X, R, M1, M2);
+  matrix[M1, M2] X0R_pad = pad(X, R, d, M1, M2);
   matrix[M1, M2] Y = abs(fft2(X0R_pad)) .^ 2;
   real Y_bar = mean(Y);
 
   // prior
-  real sigma = 1; // todo: try hierachical model
   for (i in 1 : rows(X) - 1) {
     X[i] ~ normal(X[i + 1], sigma);
   }
