@@ -21,7 +21,7 @@ def rgb2gray(rgb):
     return gray
 
 
-SIZE = "128"  # 32, 64, 128, 192, 256
+SIZE = "256"  # 32, 64, 128, 192, 256
 NOISE = "full"  # noiseless, low_photon, beamstop, full
 METHOD = "OPTIMIZE"  # OPTIMIZE, SAMPLE
 
@@ -68,6 +68,8 @@ if __name__ == "__main__":
     # sanity check:
     print(data)
     side_by_side((x_init_true, "Ground truth"), (R, "reference"))
+    # show input frequencies
+    # plt.imshow(np.fft.fftshift(np.log(1 + Y_tilde)), cmap='viridis'); plt.show()
 
     if METHOD == "OPTIMIZE":
         fit = model.optimize(
@@ -93,7 +95,7 @@ if __name__ == "__main__":
             save_warmup=True,
             refresh=10,
             iter_warmup=400,
-            iter_sampling=400
+            iter_sampling=400,
         )
         after = time.perf_counter()
         print(f"Sampling took {after - before:0.2f} seconds")
