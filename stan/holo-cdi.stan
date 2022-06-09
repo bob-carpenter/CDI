@@ -12,6 +12,8 @@ functions {
    * Return M1 x M2 matrix of 1 values with blocks in corners set to
    * 0, where the upper left is (r x r), the upper right is (r x r-1),
    * the lower left is (r-1 x r), and the lower right is (r-1 x r-1).
+   * This corresponds to zeroing out the lowest-frequency portions of
+   * an FFT.
    * @param M1 number of rows
    * @param M2 number of cols
    * @param r block dimension
