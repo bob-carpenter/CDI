@@ -47,7 +47,7 @@ M1, M2 = Y_tilde.shape
 r = int(data["r"][0, 0])
 N_p = data["Np"][0, 0]
 
-sigma = 0.8  # smoothing
+sigma = 0.01 # smoothing
 
 data = {
     "N": N,
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     print(data)
     side_by_side((x_true, "Ground truth"), (R, "reference"))
     # show input frequencies
-    # plt.imshow(np.fft.fftshift(np.log(1 + Y_tilde)), cmap="viridis"); plt.show()
+    plt.imshow(np.fft.fftshift(np.log(1 + Y_tilde)), cmap="viridis"); plt.show()
 
     if METHOD == "OPTIMIZE":
         fit = model.optimize(
