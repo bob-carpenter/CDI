@@ -35,7 +35,10 @@ TRUE_IMAGE = REPO_DIR / "data" / SIZE / "mimivirus.png"
 RESULT_DIR = REPO_DIR / "results" / METHOD / SIZE / NOISE
 RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
-model = cmdstanpy.CmdStanModel(stan_file=STAN_FILE)
+model = cmdstanpy.CmdStanModel(
+    stan_file=STAN_FILE,
+    stanc_options={"O1": True},
+)
 
 R = np.loadtxt(REF_FILE, delimiter=",", dtype=int)
 N = R.shape[0]
@@ -47,7 +50,7 @@ M1, M2 = Y_tilde.shape
 r = int(data["r"][0, 0])
 N_p = data["Np"][0, 0]
 
-sigma = 0.01 # smoothing
+sigma = 1  # smoothing
 
 data = {
     "N": N,
@@ -83,7 +86,8 @@ if __name__ == "__main__":
     print(data)
     side_by_side((x_true, "Ground truth"), (R, "reference"))
     # show input frequencies
-    plt.imshow(np.fft.fftshift(np.log(1 + Y_tilde)), cmap="viridis"); plt.show()
+    plt.imshow(np.fft.fftshift(np.log(1 + Y_tilde)), cmap="viridis")
+    plt.show()
 
     if METHOD == "OPTIMIZE":
         fit = model.optimize(

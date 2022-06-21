@@ -7,7 +7,6 @@
  */
 
 functions {
-
   /**
    * Return M1 x M2 matrix of 1 values with blocks in corners set to
    * 0, where the upper left is (r x r), the upper right is (r x r-1),
@@ -36,26 +35,33 @@ functions {
   }
 
   /**
-   * Return result of separating X and R with a matrix of 0s and then
-   * 0 padding to right and below.  That is, assuming X and R are the
-   * same shape and 0 is a matrix of zeros of the same shape, the
-   * result is
+   * Return the matrix corresponding to the fast Fourier
+   * transform of Z after it is padded with zeros to size
+   * N by M
+   * When N by M is larger than the dimensions of Z,
+   * this computes an oversampled FFT.
    *
-   *  [X, 0, R]  | 0
-   *  --------------
-   *      0      | 0
-   *
-   * @param X X matrix
-   * @param R R matrix
-   * @return 0-padded [X, 0, R] matrix
+   * @param Z matrix of values
+   * @param N number of rows desired (must be >= rows(Z))
+   * @param M number of columns desired (must be >= cols(Z))
+   * @return the FFT of Z padded with zeros
    */
-  matrix pad(matrix X, matrix R, int d, int M1, int M2) {
-    matrix[M1, M2] y = rep_matrix(0, M1, M2);
-    int N = rows(X);
-    y[1 : N, 1 : N] = X;
-    y[1 : N,  N + d + 1 : 2 * N + d] = R;
-    return y;
+  complex_matrix fft2(complex_matrix Z, int N, int M){
+    int r = rows(Z);
+    int c = cols(Z);
+    if (r > N){
+      reject("N must be at least rows(Z)");
+    }
+    if (c > M){
+      reject("M must be at least cols(Z)");
+    }
+
+    complex_matrix[N, M] pad = rep_matrix(to_complex(), N, M);
+    pad[1:r, 1:c] = Z;
+
+    return fft2(pad);
   }
+
 }
 
 data {
@@ -64,7 +70,7 @@ data {
   int<lower=0, upper=N> d;            // separation between sample and registration image
   int<lower=N> M1;                    // rows of padded matrices
   int<lower=2 * N + d> M2;            // cols of padded matrices
-  int<lower=0, upper=M1> r;           // beamstop radius. replaces omega1, omega2 in paper
+  int<lower=0, upper=min(M1, M2)> r;  // beamstop radius. replaces omega1, omega2 in paper
 
   real<lower=0> N_p;                  // avg number of photons per pixel
   array[M1, M2] int<lower=0> Y_tilde; // observed number of photons
@@ -74,6 +80,7 @@ data {
 
 transformed data {
   matrix[M1, M2] B_cal = pad_corners(M1, M2, r);
+  matrix[N, d] separation = rep_matrix(0, N, d);
 }
 
 parameters {
@@ -81,11 +88,7 @@ parameters {
 }
 
 model {
-  matrix[M1, M2] X0R_pad = pad(X, R, d, M1, M2);
-  matrix[M1, M2] Y = abs(fft2(X0R_pad)) .^ 2;
-  real Y_bar = mean(Y);
-
-  // prior
+  // prior - penalizing L2 on adjacent pixels
   for (i in 1 : rows(X) - 1) {
     X[i] ~ normal(X[i + 1], sigma);
   }
@@ -94,12 +97,18 @@ model {
   }
 
   // likelihood
-  real N_p_over_Y_bar = N_p / Y_bar;
+
+  // object representing specimen and reference together
+  matrix[N, 2*N + d] X0R = append_col(X, append_col(separation, R));
+  // observed signal - squared magnitude of the (oversampled) FFT
+  matrix[M1, M2] Y = abs(fft2(X0R, M1, M2)) .^ 2;
+
+  real N_p_over_Y_bar = N_p / mean(Y);
   matrix[M1, M2] lambda = N_p_over_Y_bar * Y;
 
   for (m1 in 1 : M1) {
     for (m2 in 1 : M2) {
-      if (B_cal[m1, m2] == 1) {
+      if (B_cal[m1, m2]) {
         Y_tilde[m1, m2] ~ poisson(lambda[m1, m2]);
         // square error
         // Y_tilde[m1, m2] ~ normal(lambda[m1, m2], 1 / sqrt(2));
