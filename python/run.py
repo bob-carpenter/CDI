@@ -23,12 +23,12 @@ def rgb2gray(rgb):
 
 SIZE = "256"  # 32, 64, 128, 192, 256
 NOISE = "full"  # noiseless, low_photon, beamstop, full
-METHOD = "OPTIMIZE"  # OPTIMIZE, SAMPLE
+METHOD = "SAMPLE"  # OPTIMIZE, SAMPLE
 INIT_TO_TRUE = False
 
 REPO_DIR = pathlib.Path(__file__).parent.parent.resolve()
 
-STAN_FILE = REPO_DIR / "stan" / "holo-cdi.stan"
+STAN_FILE = REPO_DIR / "stan" / "holo-cdi-idxs.stan"
 REF_FILE = REPO_DIR / "data" / SIZE / f"URA_{SIZE}.csv"
 DATA_FILE = REPO_DIR / "data" / SIZE / NOISE / "Yt_data.mat"
 TRUE_IMAGE = REPO_DIR / "data" / SIZE / "mimivirus.png"
@@ -37,7 +37,7 @@ RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
 model = cmdstanpy.CmdStanModel(
     stan_file=STAN_FILE,
-    stanc_options={"O1": True},
+    # stanc_options={"O1": True},
 )
 
 R = np.loadtxt(REF_FILE, delimiter=",", dtype=int)

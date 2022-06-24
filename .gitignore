@@ -131,6 +131,8 @@ dmypy.json
 
 stan/holo-cdi
 stan/holo-cdi.exe
+stan/holo-cdi-idxs
+stan/holo-cdi-idxs.exe
 *.hpp
 results/
 .stan/
